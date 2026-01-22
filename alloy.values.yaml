@@ -1,0 +1,396 @@
+alloy:
+  clustering:
+    enabled: false
+    name: ""
+    portName: http
+  configMap:
+    content: |2-
+
+      loki.write "default" {
+      endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+        }
+      }
+
+
+      discovery.kubernetes "pod" {
+       role = "pod"
+       // Restrict to pods on the node to reduce cpu & memory usage
+       selectors {
+         role = "pod"
+         field = "spec.nodeName=" + coalesce(sys.env("HOSTNAME"), constants.hostname)
+       }
+      }
+
+      // discovery.relabel rewrites the label set of the input targets by applying one or more relabeling rules.
+      // If no rules are defined, then the input targets are exported as-is.
+      discovery.relabel "pod_logs" {
+       targets = discovery.kubernetes.pod.targets
+
+       // Label creation - "namespace" field from "__meta_kubernetes_namespace"
+       rule {
+         source_labels = ["__meta_kubernetes_namespace"]
+         action = "replace"
+         target_label = "namespace"
+       }
+
+       // Label creation - "pod" field from "__meta_kubernetes_pod_name"
+       rule {
+         source_labels = ["__meta_kubernetes_pod_name"]
+         action = "replace"
+         target_label = "pod"
+       }
+
+       // Label creation - "container" field from "__meta_kubernetes_pod_container_name"
+       rule {
+         source_labels = ["__meta_kubernetes_pod_container_name"]
+         action = "replace"
+         target_label = "container"
+       }
+
+       // Label creation -  "app" field from "__meta_kubernetes_pod_label_app_kubernetes_io_name"
+       rule {
+         source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+         action = "replace"
+         target_label = "app"
+       }
+
+       // Label creation -  "job" field from "__meta_kubernetes_namespace" and "__meta_kubernetes_pod_container_name"
+       // Concatenate values __meta_kubernetes_namespace/__meta_kubernetes_pod_container_name
+       rule {
+         source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_container_name"]
+         action = "replace"
+         target_label = "job"
+         separator = "/"
+         replacement = "$1"
+       }
+
+       // Label creation - "__path__" field from "__meta_kubernetes_pod_uid" and "__meta_kubernetes_pod_container_name"
+       // Concatenate values __meta_kubernetes_pod_uid/__meta_kubernetes_pod_container_name.log
+       rule {
+         source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+         action = "replace"
+         target_label = "__path__"
+         separator = "/"
+         replacement = "/var/log/pods/*$1/*.log"
+       }
+
+       // Label creation -  "container_runtime" field from "__meta_kubernetes_pod_container_id"
+       rule {
+         source_labels = ["__meta_kubernetes_pod_container_id"]
+         action = "replace"
+         target_label = "container_runtime"
+         regex = "^(\\S+):\\/\\/.+$"
+         replacement = "$1"
+       }
+      }
+
+      // loki.source.kubernetes tails logs from Kubernetes containers using the Kubernetes API.
+      loki.source.kubernetes "pod_logs" {
+        targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.process.pod_logs.receiver]
+      }
+
+      // loki.process receives log entries from other Loki components, applies one or more processing stages,
+      // and forwards the results to the list of receivers in the component's arguments.
+      loki.process "pod_logs" {
+        stage.static_labels {
+            values = {
+              cluster = "segel_cluster",
+            }
+        }
+
+        forward_to = [loki.write.default.receiver]
+      }
+
+      // loki.source.kubernetes_events tails events from the Kubernetes API and converts them
+      // into log lines to forward to other Loki components.
+      loki.source.kubernetes_events "cluster_events" {
+        job_name   = "integrations/kubernetes/eventhandler"
+        log_format = "logfmt"
+        forward_to = [
+          loki.process.cluster_events.receiver,
+        ]
+      }
+
+      // loki.process receives log entries from other loki components, applies one or more processing stages,
+      // and forwards the results to the list of receivers in the component's arguments.
+      loki.process "cluster_events" {
+        forward_to = [loki.write.default.receiver]
+
+        stage.static_labels {
+          values = {
+            cluster = "segel_cluster",
+          }
+        }
+
+        stage.labels {
+          values = {
+            kubernetes_cluster_events = "job",
+          }
+        }
+      }
+    create: true
+    key: null
+    name: null
+  enableHttpServerPort: true
+  enableReporting: true
+  envFrom: []
+  extraArgs: []
+  extraEnv: []
+  extraPorts: []
+  hostAliases: []
+  initialDelaySeconds: 10
+  lifecycle: {}
+  listenAddr: 0.0.0.0
+  listenPort: 12345
+  listenScheme: HTTP
+  livenessProbe: {}
+  mounts:
+    dockercontainers: false
+    extra: []
+    varlog: false
+  resources: {}
+  securityContext: {}
+  stabilityLevel: generally-available
+  storagePath: /tmp/alloy
+  timeoutSeconds: 1
+  uiPathPrefix: /
+configReloader:
+  customArgs: []
+  enabled: true
+  image:
+    digest: ""
+    registry: quay.io
+    repository: prometheus-operator/prometheus-config-reloader
+    tag: v0.81.0
+  resources:
+    requests:
+      cpu: 10m
+      memory: 50Mi
+  securityContext: {}
+controller:
+  affinity: {}
+  autoscaling:
+    enabled: false
+    horizontal:
+      enabled: false
+      maxReplicas: 5
+      minReplicas: 1
+      scaleDown:
+        policies: []
+        selectPolicy: Max
+        stabilizationWindowSeconds: 300
+      scaleUp:
+        policies: []
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+      targetCPUUtilizationPercentage: 0
+      targetMemoryUtilizationPercentage: 80
+    maxReplicas: 5
+    minReplicas: 1
+    scaleDown:
+      policies: []
+      selectPolicy: Max
+      stabilizationWindowSeconds: 300
+    scaleUp:
+      policies: []
+      selectPolicy: Max
+      stabilizationWindowSeconds: 0
+    targetCPUUtilizationPercentage: 0
+    targetMemoryUtilizationPercentage: 80
+    vertical:
+      enabled: false
+      recommenders: []
+      resourcePolicy:
+        containerPolicies:
+        - containerName: alloy
+          controlledResources:
+          - cpu
+          - memory
+          controlledValues: RequestsAndLimits
+          maxAllowed: {}
+          minAllowed: {}
+      updatePolicy: null
+  dnsPolicy: ClusterFirst
+  enableStatefulSetAutoDeletePVC: false
+  extraAnnotations: {}
+  extraContainers: []
+  extraLabels: {}
+  hostNetwork: false
+  hostPID: false
+  initContainers: []
+  minReadySeconds: 10
+  nodeSelector: {}
+  parallelRollout: true
+  podAnnotations: {}
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable: null
+    minAvailable: null
+  podLabels: {}
+  priorityClassName: ""
+  replicas: 1
+  terminationGracePeriodSeconds: null
+  tolerations: []
+  topologySpreadConstraints: []
+  type: daemonset
+  updateStrategy: {}
+  volumeClaimTemplates: []
+  volumes:
+    extra: []
+crds:
+  create: true
+extraObjects: []
+fullnameOverride: null
+global:
+  image:
+    pullSecrets: []
+    registry: ""
+  podSecurityContext: {}
+image:
+  digest: null
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+  registry: docker.io
+  repository: grafana/alloy
+  tag: null
+ingress:
+  annotations: {}
+  enabled: false
+  extraPaths: []
+  faroPort: 12347
+  hosts:
+  - chart-example.local
+  labels: {}
+  path: /
+  pathType: Prefix
+  tls: []
+nameOverride: null
+namespaceOverride: null
+networkPolicy:
+  egress:
+  - {}
+  enabled: false
+  flavor: kubernetes
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress
+  - Egress
+rbac:
+  clusterRules:
+  - apiGroups:
+    - ""
+    resources:
+    - nodes
+    - nodes/proxy
+    - nodes/metrics
+    verbs:
+    - get
+    - list
+    - watch
+  - nonResourceURLs:
+    - /metrics
+    verbs:
+    - get
+  create: true
+  namespaces: []
+  rules:
+  - apiGroups:
+    - ""
+    - discovery.k8s.io
+    - networking.k8s.io
+    resources:
+    - endpoints
+    - endpointslices
+    - ingresses
+    - pods
+    - services
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - ""
+    resources:
+    - pods
+    - pods/log
+    - namespaces
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - monitoring.grafana.com
+    resources:
+    - podlogs
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - monitoring.coreos.com
+    resources:
+    - prometheusrules
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - monitoring.coreos.com
+    resources:
+    - podmonitors
+    - servicemonitors
+    - probes
+    - scrapeconfigs
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - ""
+    resources:
+    - events
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - ""
+    resources:
+    - configmaps
+    - secrets
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - apps
+    - extensions
+    resources:
+    - replicasets
+    verbs:
+    - get
+    - list
+    - watch
+service:
+  annotations: {}
+  clusterIP: ""
+  enabled: true
+  internalTrafficPolicy: Cluster
+  nodePort: 31128
+  type: ClusterIP
+serviceAccount:
+  additionalLabels: {}
+  annotations: {}
+  automountServiceAccountToken: true
+  create: true
+  name: null
+serviceMonitor:
+  additionalLabels: {}
+  enabled: false
+  interval: ""
+  metricRelabelings: []
+  relabelings: []
+  tlsConfig: {}
