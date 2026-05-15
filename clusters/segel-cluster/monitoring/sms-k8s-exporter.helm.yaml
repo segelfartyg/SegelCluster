@@ -1,0 +1,42 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: sms
+  namespace: flux-system
+spec:
+  interval: 15m
+  url: https://github.com/segelfartyg/sms
+  ref:
+    branch: main
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sms-k8s-exporter
+  namespace: monitoring
+spec:
+  interval: 15m
+  timeout: 5m
+  chart:
+    spec:
+      chart: examples/k8/chart
+      sourceRef:
+        kind: GitRepository
+        name: sms
+        namespace: flux-system
+      interval: 5m
+  releaseName: sms-k8s-exporter
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: enabled
+  values:
+    cluster:
+      name: segel-cluster
+    warehouse:
+      url: http://sms-warehouse:8081
