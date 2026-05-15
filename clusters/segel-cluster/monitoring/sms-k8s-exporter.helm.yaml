@@ -5,7 +5,7 @@ metadata:
   name: sms
   namespace: flux-system
 spec:
-  interval: 15m
+  interval: 1m
   url: https://github.com/segelfartyg/sms
   ref:
     branch: main
@@ -16,7 +16,7 @@ metadata:
   name: sms-k8s-exporter
   namespace: monitoring
 spec:
-  interval: 15m
+  interval: 1m
   timeout: 5m
   chart:
     spec:
