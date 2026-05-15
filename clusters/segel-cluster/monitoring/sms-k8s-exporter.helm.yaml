@@ -40,3 +40,5 @@ spec:
       name: segel-cluster
     warehouse:
       url: http://sms-warehouse:8081
+    image:
+      pullPolicy: Always
