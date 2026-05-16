@@ -1,0 +1,31 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sms-warehouse
+  namespace: monitoring
+spec:
+  interval: 1m
+  timeout: 5m
+  chart:
+    spec:
+      chart: SMS.Warehouse/chart
+      sourceRef:
+        kind: GitRepository
+        name: sms
+        namespace: flux-system
+      interval: 5m
+  releaseName: sms-warehouse
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: enabled
+  valuesFrom:
+    - kind: Secret
+      name: sms-warehouse-db
+      valuesKey: DATABASE_URL
+      targetPath: databaseUrl
