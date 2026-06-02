@@ -1,0 +1,31 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sms-page-viewer
+  namespace: monitoring
+spec:
+  interval: 1m
+  timeout: 5m
+  chart:
+    spec:
+      chart: examples/web/chart
+      sourceRef:
+        kind: GitRepository
+        name: sms
+        namespace: flux-system
+      interval: 5m
+  releaseName: sms-page-viewer
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: enabled
+  values:
+    backendUrl: http://sms-backend:8080
+    warehouseUrl: http://sms-warehouse:8081
+    image:
+      pullPolicy: Always
