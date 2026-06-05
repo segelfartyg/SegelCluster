@@ -99,10 +99,7 @@ spec:
     singleBinary:
       replicas: 1
       persistence:
-        storageClass: gp2
-        accessModes:
-          - ReadWriteOnce
-        size: 5Gi
+        enabled: false
 
     # Zero out replica counts of other deployment modes
     backend:
