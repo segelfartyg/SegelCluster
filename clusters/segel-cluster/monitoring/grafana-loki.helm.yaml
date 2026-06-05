@@ -129,5 +129,5 @@ spec:
       replicas: 0
     bloomGateway:
       replicas: 0
-    chunksCache
+    chunksCache:
       enabled: false
