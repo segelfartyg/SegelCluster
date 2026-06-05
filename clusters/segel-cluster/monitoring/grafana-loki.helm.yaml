@@ -97,12 +97,12 @@ spec:
     deploymentMode: Monolithic
 
     singleBinary:
-      replicas: 3
+      replicas: 1
       persistence:
         storageClass: gp2
         accessModes:
           - ReadWriteOnce
-        size: 30Gi
+        size: 5Gi
 
     # Zero out replica counts of other deployment modes
     backend:
