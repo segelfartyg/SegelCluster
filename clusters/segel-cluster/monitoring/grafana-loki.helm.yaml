@@ -54,7 +54,7 @@ spec:
               period: 24h
       storage_config:
         aws:
-          region: <AWS region your bucket is in, for example, `eu-west-2`>
+          region: eu-north-1
           bucketnames: loki-chunks
           s3forcepathstyle: true
           insecure: true
@@ -75,7 +75,7 @@ spec:
           # AWS endpoint URL
           endpoint: http://minio-endpoint:9000
           # AWS region where the S3 bucket is located
-          region: se
+          region: eu-north-1
           # AWS secret access key
           secretAccessKey: <your-secret-access-key>
           # AWS access key ID
