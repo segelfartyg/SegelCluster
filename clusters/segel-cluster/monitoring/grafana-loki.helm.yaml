@@ -39,6 +39,19 @@ spec:
       - paths: ["/spec/replicas"]
         target:
           kind: Deployment
+  valuesFrom:
+    - kind: Secret
+      name: loki-s3
+      valuesKey: endpoint
+      targetPath: loki.storage.s3.endpoint
+    - kind: Secret
+      name: loki-s3
+      valuesKey: accessKeyId
+      targetPath: loki.storage.s3.accessKeyId
+    - kind: Secret
+      name: loki-s3
+      valuesKey: secretAccessKey
+      targetPath: loki.storage.s3.secretAccessKey
   values:
     loki:
       commonConfig:
@@ -72,14 +85,9 @@ spec:
           ruler: loki-ruler
           admin: loki-admin
         s3:
-          # AWS endpoint URL
-          endpoint: http://minio-endpoint:9000
           # AWS region where the S3 bucket is located
           region: eu-north-1
-          # AWS secret access key
-          secretAccessKey: <your-secret-access-key>
-          # AWS access key ID
-          accessKeyId: <your-access-key-id>
+          # Injected from loki-s3 secret: endpoint, accessKeyId, secretAccessKey
           # AWS signature version (e.g., v2 or v4)
           signatureVersion: v4
           # Forces the path style for S3 (true/false)
