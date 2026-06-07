@@ -1,6 +1,59 @@
-alloy                	monitoring     	6       	2025-10-29 20:02:38.7187806 +0100 CET  	deployed       	alloy-1.4.0                 	v1.11.3    
-headlamp             	monitoring     	1       	2025-12-23 15:10:47.484614761 +0100 CET	deployed       	headlamp-0.39.0             	0.39.0     
-kube-prometheus-stack	monitoring     	1       	2025-10-27 21:21:04.6526817 +0100 CET  	deployed       	kube-prometheus-stack-79.0.0	v0.86.1    
-loki                 	monitoring     	14      	2025-10-31 14:27:35.9158813 +0100 CET  	pending-upgrade	loki-6.44.0                 	3.5.7      
-longhorn             	longhorn-system	1       	2025-10-28 20:55:26.1017132 +0100 CET  	deployed       	longhorn-1.10.0             	v1.10.0    
-traffic-manager      	ambassador     	1       	2026-01-15 20:00:05.385014553 +0100 CET	deployed       	telepresence-oss-2.25.2     	2.25.2 
+# SegelCluster
+
+GitOps configuration for **segel-cluster**, a personal Kubernetes cluster reconciled by [Flux CD](https://fluxcd.io/).
+
+Flux watches this repository (`https://github.com/segelfartyg/SegelCluster`, branch `main`) and applies everything under [`clusters/segel-cluster`](clusters/segel-cluster), pruning resources that are removed.
+
+## Repository layout
+
+```
+clusters/segel-cluster/
+├── flux-system/   # Flux bootstrap manifests (GitRepository + Kustomization, gotk components)
+├── namespaces/    # Namespace definitions (monitoring, traefik)
+├── monitoring/    # Observability stack and the SMS application stack
+└── traefik/       # Ingress / Gateway API / external exposure
+```
+
+## What's deployed
+
+### Observability (`monitoring/`)
+- **kube-prometheus-stack** — Prometheus, Alertmanager and Grafana for metrics
+- **Loki** (monolithic deployment mode, S3-backed via the `loki-s3` secret) — log storage with 28-day retention
+- **Grafana Alloy** (DaemonSet) — collects pod logs and Kubernetes cluster events and ships them to Loki
+- **Headlamp** — web UI for the Kubernetes API
+
+### SMS application stack (sourced from [segelfartyg/sms](https://github.com/segelfartyg/sms))
+- **sms-backend** — backend API (DB connection from `sms-backend-db` secret)
+- **sms-warehouse** — data warehouse service (DB connection from `sms-warehouse-db` secret)
+- **sms-k8s-exporter** — exports cluster info to the warehouse
+- **sms-page-viewer** — frontend, exposed externally via a Traefik `HTTPRoute`
+
+### Ingress & networking (`traefik/`)
+- **Gateway API CRDs** — installed via a Flux `Kustomization` pointing at the upstream `kubernetes-sigs/gateway-api` repo
+- **Traefik** — ingress controller running as the Gateway API implementation, exposed as a `NodePort` service
+- **cloudflared** — Cloudflare Tunnel deployment (2 replicas) that exposes services to the internet without opening inbound ports (tunnel token from the `tunnel-token` secret)
+
+## External infrastructure (not in this repo)
+
+Some dependencies run outside the Kubernetes cluster, on separate VMs, and are consumed via the secrets below:
+- **PostgreSQL** — databases for `sms-backend` and `sms-warehouse` (connected to via the `sms-backend-db` / `sms-warehouse-db` secrets' `DATABASE_URL`)
+- **MinIO** — S3-compatible object storage backing Loki's chunk/ruler/admin buckets (connected to via the `loki-s3` secret's endpoint/credentials)
+
+## Secrets
+
+Several `HelmRelease`s and resources reference Kubernetes Secrets that are **not** stored in this repo and must be created in the cluster out of band:
+
+| Secret | Namespace | Used by |
+| --- | --- | --- |
+| `loki-s3` | monitoring | Loki S3 storage endpoint/credentials |
+| `sms-backend-db` | monitoring | sms-backend `DATABASE_URL` |
+| `sms-warehouse-db` | monitoring | sms-warehouse `DATABASE_URL` |
+| `tunnel-token` | traefik | cloudflared tunnel token |
+| `flux-system` | flux-system | Git repository auth for Flux |
+
+## Bootstrapping
+
+Flux is bootstrapped against this repository with:
+- Source: `https://github.com/segelfartyg/SegelCluster.git`, branch `main`
+- Sync path: `./clusters/segel-cluster`
+- Reconciliation interval: 10 minutes
