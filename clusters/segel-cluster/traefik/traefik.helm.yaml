@@ -35,6 +35,8 @@ spec:
   driftDetection:
     mode: enabled
   values:
+    service:
+      type: NodePort
     providers:
       kubernetesGateway:
         enabled: true
