@@ -65,6 +65,8 @@ spec:
               value: "xforwarded"
             - name: KC_HTTP_ENABLED
               value: "true"
+            - name: KC_HOSTNAME
+              value: "https://swaren.se/auth"
             - name: KC_HOSTNAME_STRICT
               value: "false"
             - name: KC_HEALTH_ENABLED
