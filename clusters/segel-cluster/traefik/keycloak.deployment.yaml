@@ -62,6 +62,11 @@ spec:
                 secretKeyRef:
                   name: keycloak-db
                   key: host
+            - name: KC_DB_URL_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-db
+                  key: port
             - name: KC_DB_URL_DATABASE
               valueFrom:
                 secretKeyRef:
