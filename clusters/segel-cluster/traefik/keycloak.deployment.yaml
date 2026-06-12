@@ -6,22 +6,38 @@ metadata:
   labels:
     app: keycloak
 spec:
-  selector:
-    app: keycloak
   ports:
-    - name: http
+    - protocol: TCP
       port: 8080
       targetPort: http
+      name: http
+  selector:
+    app: keycloak
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-discovery
+  namespace: traefik
+  labels:
+    app: keycloak
+spec:
+  selector:
+    app: keycloak
+  clusterIP: None
+  type: ClusterIP
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: keycloak
   namespace: traefik
   labels:
     app: keycloak
 spec:
-  replicas: 1
+  serviceName: keycloak-discovery
+  replicas: 2
   selector:
     matchLabels:
       app: keycloak
@@ -54,7 +70,15 @@ spec:
             - name: KC_HEALTH_ENABLED
               value: "true"
             - name: KC_HTTP_RELATIVE_PATH
-              value: "/auth"
+              value: "/"
+            - name: KC_CACHE
+              value: "ispn"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: KC_CACHE_EMBEDDED_NETWORK_BIND_ADDRESS
+              value: "$(POD_IP)"
             - name: KC_DB
               value: "postgres"
             - name: KC_DB_URL_HOST
@@ -87,28 +111,32 @@ spec:
               containerPort: 8080
             - name: management
               containerPort: 9000
+            - name: jgroups
+              containerPort: 7800
+            - name: jgroups-fd
+              containerPort: 57800
           startupProbe:
             httpGet:
               path: /health/started
-              port: management
+              port: 9000
             periodSeconds: 1
             failureThreshold: 600
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: management
+              port: 9000
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health/live
-              port: management
+              port: 9000
             periodSeconds: 10
             failureThreshold: 3
           resources:
-            requests:
-              cpu: 250m
-              memory: 512Mi
             limits:
-              cpu: 1000m
-              memory: 1024Mi
+              cpu: 2000m
+              memory: 2000Mi
+            requests:
+              cpu: 500m
+              memory: 1700Mi

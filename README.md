@@ -51,7 +51,7 @@ Several resources reference Kubernetes Secrets that are **not** stored in this r
 | `sms-warehouse-db` | monitoring | sms-warehouse `DATABASE_URL` | `DATABASE_URL` |
 | `tunnel-token` | traefik | cloudflared tunnel token | `token` |
 | `keycloak-admin` | traefik | Keycloak admin console login | `username`, `password` |
-| `keycloak-db` | traefik | Keycloak Postgres connection | `host`, `database`, `username`, `password` |
+| `keycloak-db` | traefik | Keycloak Postgres connection | `host`, `port`, `database`, `username`, `password` |
 | `flux-system` | flux-system | Git repository auth for Flux | - |
 
 ## Bootstrapping
