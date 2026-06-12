@@ -26,30 +26,33 @@ clusters/segel-cluster/
 - **sms-backend** — backend API (DB connection from `sms-backend-db` secret)
 - **sms-warehouse** — data warehouse service (DB connection from `sms-warehouse-db` secret)
 - **sms-k8s-exporter** — exports cluster info to the warehouse
-- **sms-page-viewer** — frontend, exposed externally via a Traefik `HTTPRoute`
+- **sms-page-viewer** — frontend (not currently exposed externally — pending an auth layer in front of it)
 
 ### Ingress & networking (`traefik/`)
 - **Gateway API CRDs** — installed via a Flux `Kustomization` pointing at the upstream `kubernetes-sigs/gateway-api` repo
 - **Traefik** — ingress controller running as the Gateway API implementation, exposed as a `NodePort` service
 - **cloudflared** — Cloudflare Tunnel deployment (2 replicas) that exposes services to the internet without opening inbound ports (tunnel token from the `tunnel-token` secret)
+- **Keycloak** — identity/auth provider ([getting-started-kube](https://www.keycloak.org/getting-started/getting-started-kube)-based Deployment), exposed via a Traefik `HTTPRoute` under the `/auth` path prefix. Admin login from the `keycloak-admin` secret, database connection from the `keycloak-db` secret.
 
 ## External infrastructure (not in this repo)
 
 Some dependencies run outside the Kubernetes cluster, on separate VMs, and are consumed via the secrets below:
-- **PostgreSQL** — databases for `sms-backend` and `sms-warehouse` (connected to via the `sms-backend-db` / `sms-warehouse-db` secrets' `DATABASE_URL`)
+- **PostgreSQL** — databases for `sms-backend`, `sms-warehouse`, and `keycloak` (connected to via the `sms-backend-db` / `sms-warehouse-db` / `keycloak-db` secrets)
 - **MinIO** — S3-compatible object storage backing Loki's chunk/ruler/admin buckets (connected to via the `loki-s3` secret's endpoint/credentials)
 
 ## Secrets
 
-Several `HelmRelease`s and resources reference Kubernetes Secrets that are **not** stored in this repo and must be created in the cluster out of band:
+Several resources reference Kubernetes Secrets that are **not** stored in this repo and must be created in the cluster out of band:
 
-| Secret | Namespace | Used by |
-| --- | --- | --- |
-| `loki-s3` | monitoring | Loki S3 storage endpoint/credentials |
-| `sms-backend-db` | monitoring | sms-backend `DATABASE_URL` |
-| `sms-warehouse-db` | monitoring | sms-warehouse `DATABASE_URL` |
-| `tunnel-token` | traefik | cloudflared tunnel token |
-| `flux-system` | flux-system | Git repository auth for Flux |
+| Secret | Namespace | Used by | Keys |
+| --- | --- | --- | --- |
+| `loki-s3` | monitoring | Loki S3 storage endpoint/credentials | `endpoint`, `accessKeyId`, `secretAccessKey` |
+| `sms-backend-db` | monitoring | sms-backend `DATABASE_URL` | `DATABASE_URL` |
+| `sms-warehouse-db` | monitoring | sms-warehouse `DATABASE_URL` | `DATABASE_URL` |
+| `tunnel-token` | traefik | cloudflared tunnel token | `token` |
+| `keycloak-admin` | traefik | Keycloak admin console login | `username`, `password` |
+| `keycloak-db` | traefik | Keycloak Postgres connection | `host`, `database`, `username`, `password` |
+| `flux-system` | flux-system | Git repository auth for Flux | - |
 
 ## Bootstrapping
 
