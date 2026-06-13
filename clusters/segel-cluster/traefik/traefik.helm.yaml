@@ -37,6 +37,10 @@ spec:
   values:
     service:
       type: NodePort
+    ports:
+      web:
+        forwardedHeaders:
+          insecure: true
     providers:
       kubernetesGateway:
         enabled: true
