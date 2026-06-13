@@ -32,7 +32,7 @@ clusters/segel-cluster/
 - **Gateway API CRDs** — installed via a Flux `Kustomization` pointing at the upstream `kubernetes-sigs/gateway-api` repo
 - **Traefik** — ingress controller running as the Gateway API implementation, exposed as a `NodePort` service
 - **cloudflared** — Cloudflare Tunnel deployment (2 replicas) that exposes services to the internet without opening inbound ports (tunnel token from the `tunnel-token` secret)
-- **Keycloak** — identity/auth provider ([getting-started-kube](https://www.keycloak.org/getting-started/getting-started-kube)-based StatefulSet, 2 replicas, clustered via Infinispan/JGroups over the headless `keycloak-discovery` service), exposed via a Traefik `HTTPRoute` under the `/auth` path prefix. Admin login from the `keycloak-admin` secret, database connection from the `keycloak-db` secret. The public hostname is pinned via `KC_HOSTNAME=https://swaren.se/auth` so the admin console generates correct URLs through the Cloudflare Tunnel → Traefik path.
+- **Keycloak** — identity/auth provider ([getting-started-kube](https://www.keycloak.org/getting-started/getting-started-kube)-based StatefulSet, 2 replicas, clustered via Infinispan/JGroups over the headless `keycloak-discovery` service), exposed via a Traefik `HTTPRoute` on the `auth.swaren.se` hostname. Admin login from the `keycloak-admin` secret, database connection from the `keycloak-db` secret. The public hostname is pinned via `KC_HOSTNAME=https://auth.swaren.se` so the admin console generates correct URLs through the Cloudflare Tunnel → Traefik path.
 
 ## External infrastructure (not in this repo)
 

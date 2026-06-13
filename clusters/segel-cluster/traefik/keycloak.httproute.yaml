@@ -7,11 +7,13 @@ spec:
   parentRefs:
     - name: traefik-gateway
       namespace: traefik
+  hostnames:
+    - auth.swaren.se
   rules:
     - matches:
         - path:
             type: PathPrefix
-            value: /auth
+            value: /
       backendRefs:
         - name: keycloak
           port: 8080
