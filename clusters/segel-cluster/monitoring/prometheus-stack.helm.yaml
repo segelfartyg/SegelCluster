@@ -63,3 +63,5 @@ spec:
           token_url: https://auth.swaren.se/realms/segel-cluster/protocol/openid-connect/token
           api_url: https://auth.swaren.se/realms/segel-cluster/protocol/openid-connect/userinfo
           use_pkce: true
+          allow_assign_grafana_admin: true
+          role_attribute_path: "contains(resource_access.\"grafana-oauth\".roles[*], 'admin') && 'GrafanaAdmin' || contains(resource_access.\"grafana-oauth\".roles[*], 'editor') && 'Editor' || 'Viewer'"
