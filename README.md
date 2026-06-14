@@ -17,7 +17,7 @@ clusters/segel-cluster/
 ## What's deployed
 
 ### Observability (`monitoring/`)
-- **kube-prometheus-stack** — Prometheus, Alertmanager and Grafana for metrics
+- **kube-prometheus-stack** — Prometheus, Alertmanager and Grafana for metrics. Grafana is exposed via a Traefik `HTTPRoute` on `grafana.swaren.se` and authenticates against the `segel-cluster` realm in Keycloak via generic OAuth (client credentials from the `grafana-oauth` secret)
 - **Loki** (monolithic deployment mode, S3-backed via the `loki-s3` secret) — log storage with 28-day retention
 - **Grafana Alloy** (DaemonSet) — collects pod logs and Kubernetes cluster events and ships them to Loki
 - **Headlamp** — web UI for the Kubernetes API
@@ -47,6 +47,7 @@ Several resources reference Kubernetes Secrets that are **not** stored in this r
 | Secret | Namespace | Used by | Keys |
 | --- | --- | --- | --- |
 | `loki-s3` | monitoring | Loki S3 storage endpoint/credentials | `endpoint`, `accessKeyId`, `secretAccessKey` |
+| `grafana-oauth` | monitoring | Grafana Keycloak generic OAuth client credentials | `client-id`, `client-secret` |
 | `sms-backend-db` | monitoring | sms-backend `DATABASE_URL` | `DATABASE_URL` |
 | `sms-warehouse-db` | monitoring | sms-warehouse `DATABASE_URL` | `DATABASE_URL` |
 | `tunnel-token` | traefik | cloudflared tunnel token | `token` |
