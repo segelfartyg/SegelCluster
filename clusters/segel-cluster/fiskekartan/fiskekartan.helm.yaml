@@ -1,0 +1,61 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: fiskekartan
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/segelfartyg/fiskekartan
+  ref:
+    branch: main
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: fiskekartan
+  namespace: fiskekartan
+spec:
+  interval: 1m
+  timeout: 5m
+  chart:
+    spec:
+      chart: chart
+      sourceRef:
+        kind: GitRepository
+        name: fiskekartan
+        namespace: flux-system
+      interval: 5m
+  releaseName: fiskekartan
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: enabled
+  valuesFrom:
+    - kind: Secret
+      name: fiskekartan-secrets
+      valuesKey: DATABASE_URL
+      targetPath: databaseUrl
+    - kind: Secret
+      name: fiskekartan-secrets
+      valuesKey: MINIO_ENDPOINT
+      targetPath: minioEndpoint
+    - kind: Secret
+      name: fiskekartan-secrets
+      valuesKey: MINIO_ACCESS_KEY
+      targetPath: minioAccessKey
+    - kind: Secret
+      name: fiskekartan-secrets
+      valuesKey: MINIO_SECRET_KEY
+      targetPath: minioSecretKey
+  values:
+    image:
+      pullPolicy: Always
+    minioBucket: fiskekartan-images
+    minioUseSSL: "false"
+    oidcIssuerUrl: https://auth.swaren.se/realms/segel-cluster
+    oidcAudience: fiskekartan
