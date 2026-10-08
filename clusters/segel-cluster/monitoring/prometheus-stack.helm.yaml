@@ -19,7 +19,7 @@ spec:
   chart:
     spec:
       chart: kube-prometheus-stack
-      version: '81.5.*'
+      version: "81.5.*"
       sourceRef:
         kind: HelmRepository
         name: kube-prometheus-stack
@@ -36,12 +36,19 @@ spec:
   driftDetection:
     mode: enabled
     ignore:
-    - paths: ["/spec/replicas"]
-      target:
-        kind: Deployment
+      - paths: ["/spec/replicas"]
+        target:
+          kind: Deployment
   values:
     replicaCount: 1
     grafana:
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          uid: loki
+          access: proxy
+          url: http://loki-gateway.monitoring.svc.cluster.local
+          editable: false
       envValueFrom:
         GF_AUTH_GENERIC_OAUTH_CLIENT_ID:
           secretKeyRef:
@@ -64,4 +71,4 @@ spec:
           api_url: https://auth.swaren.se/realms/segel-cluster/protocol/openid-connect/userinfo
           use_pkce: true
           allow_assign_grafana_admin: true
-          role_attribute_path: "contains(resource_access.\"grafana-oauth\".roles[*], 'admin') && 'GrafanaAdmin' || contains(resource_access.\"grafana-oauth\".roles[*], 'editor') && 'Editor' || 'Viewer'"
+          role_attribute_path: 'contains(resource_access."grafana-oauth".roles[*], ''admin'') && ''GrafanaAdmin'' || contains(resource_access."grafana-oauth".roles[*], ''editor'') && ''Editor'' || ''Viewer'''
