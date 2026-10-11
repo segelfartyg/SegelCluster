@@ -52,6 +52,13 @@ spec:
       name: fiskekartan-secrets
       valuesKey: MINIO_SECRET_KEY
       targetPath: minioSecretKey
+    # Optional so a missing key doesn't block reconciling; without it the
+    # app falls back to a random key per start (photo links break on restart).
+    - kind: Secret
+      name: fiskekartan-secrets
+      valuesKey: CATCH_PHOTO_SIGNING_KEY
+      targetPath: catchPhotoSigningKey
+      optional: true
   values:
     image:
       pullPolicy: Always
