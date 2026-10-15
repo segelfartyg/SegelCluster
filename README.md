@@ -32,7 +32,7 @@ clusters/segel-cluster/
 ### Fiskekartan (`fiskekartan/`, sourced from [segelfartyg/fiskekartan](https://github.com/segelfartyg/fiskekartan))
 - **fiskekartan** — Helm chart deployed from the `main` branch into the `fiskekartan` namespace (`reconcileStrategy: Revision`, so every new commit triggers an upgrade), exposed via a Traefik `HTTPRoute` on `fiskekartan.swaren.se`
 - Authenticates users with OIDC against the `segel-cluster` Keycloak realm (audience `fiskekartan`)
-- Stores data in PostgreSQL and catch photos in the `fiskekartan-images` MinIO bucket; connection details come from the `fiskekartan-secrets` secret. `CATCH_PHOTO_SIGNING_KEY` is optional — without it the app generates a random key on each start, which breaks existing photo links after a restart
+- Stores data in PostgreSQL and catch photos in the `fiskekartan-images` RustFS bucket; connection details come from the `fiskekartan-secrets` secret. `CATCH_PHOTO_SIGNING_KEY` is optional — without it the app generates a random key on each start, which breaks existing photo links after a restart
 
 ### Ingress & networking (`traefik/`)
 - **Gateway API CRDs** — standard-channel CRDs installed via a Flux `Kustomization` pointing at the upstream `kubernetes-sigs/gateway-api` repo (tag `v1.5.1`)
@@ -44,7 +44,7 @@ clusters/segel-cluster/
 
 Some dependencies run outside the Kubernetes cluster, on separate VMs, and are consumed via the secrets below:
 - **PostgreSQL** — databases for `sms-backend`, `sms-warehouse`, `keycloak` and `fiskekartan` (connected to via the `sms-backend-db` / `sms-warehouse-db` / `keycloak-db` / `fiskekartan-secrets` secrets)
-- **MinIO** — S3-compatible object storage backing Loki's chunk/ruler/admin buckets (via the `loki-s3` secret) and Fiskekartan's `fiskekartan-images` bucket (via `fiskekartan-secrets`)
+- **[RustFS](https://rustfs.com/)** — S3-compatible object storage backing Loki's chunk/ruler/admin buckets (via the `loki-s3` secret) and Fiskekartan's `fiskekartan-images` bucket (via `fiskekartan-secrets`)
 
 ## Secrets
 
@@ -56,7 +56,7 @@ Several resources reference Kubernetes Secrets that are **not** stored in this r
 | `grafana-oauth` | monitoring | Grafana Keycloak generic OAuth client credentials | `client-id`, `client-secret` |
 | `sms-backend-db` | monitoring | sms-backend `DATABASE_URL` | `DATABASE_URL` |
 | `sms-warehouse-db` | monitoring | sms-warehouse `DATABASE_URL` | `DATABASE_URL` |
-| `fiskekartan-secrets` | fiskekartan | Fiskekartan DB, MinIO and photo-link signing | `DATABASE_URL`, `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `CATCH_PHOTO_SIGNING_KEY` (optional) |
+| `fiskekartan-secrets` | fiskekartan | Fiskekartan DB, RustFS (S3) and photo-link signing | `DATABASE_URL`, `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `CATCH_PHOTO_SIGNING_KEY` (optional) |
 | `tunnel-token` | traefik | cloudflared tunnel token | `token` |
 | `keycloak-admin` | traefik | Keycloak admin console login | `username`, `password` |
 | `keycloak-db` | traefik | Keycloak Postgres connection | `host`, `port`, `database`, `username`, `password` |
