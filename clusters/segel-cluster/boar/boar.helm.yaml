@@ -1,0 +1,41 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: boar
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/segelfartyg/boar
+  ref:
+    branch: main
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: boar
+  namespace: boar
+spec:
+  interval: 1m
+  timeout: 5m
+  chart:
+    spec:
+      chart: chart
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: boar
+        namespace: flux-system
+      interval: 5m
+  releaseName: boar
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: enabled
+  values:
+    image:
+      pullPolicy: Always

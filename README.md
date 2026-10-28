@@ -9,8 +9,9 @@ Flux watches this repository (`https://github.com/segelfartyg/SegelCluster`, bra
 ```
 clusters/segel-cluster/
 ├── flux-system/   # Flux bootstrap manifests (GitRepository + Kustomization, gotk components)
-├── namespaces/    # Namespace definitions (fiskekartan, monitoring, traefik)
+├── namespaces/    # Namespace definitions (boar, fiskekartan, monitoring, traefik)
 ├── fiskekartan/   # Fiskekartan application
+├── boar/          # Boar Lanes bowling game
 ├── monitoring/    # Observability stack and the SMS application stack
 └── traefik/       # Ingress / Gateway API / Keycloak / external exposure
 ```
@@ -33,6 +34,9 @@ clusters/segel-cluster/
 - **fiskekartan** — Helm chart deployed from the `main` branch into the `fiskekartan` namespace (`reconcileStrategy: Revision`, so every new commit triggers an upgrade), exposed via a Traefik `HTTPRoute` on `fiskekartan.swaren.se`
 - Authenticates users with OIDC against the `segel-cluster` Keycloak realm (audience `fiskekartan`)
 - Stores data in PostgreSQL and catch photos in the `fiskekartan-images` RustFS bucket; connection details come from the `fiskekartan-secrets` secret. `CATCH_PHOTO_SIGNING_KEY` is optional — without it the app generates a random key on each start, which breaks existing photo links after a restart
+
+### Boar Lanes (`boar/`, sourced from [segelfartyg/boar](https://github.com/segelfartyg/boar))
+- **boar** — Three.js bowling game served as static files by a small Go server, Helm chart deployed from the `main` branch into the `boar` namespace (`reconcileStrategy: Revision`), exposed via a Traefik `HTTPRoute` on `boar.swaren.se`
 
 ### Ingress & networking (`traefik/`)
 - **Gateway API CRDs** — standard-channel CRDs installed via a Flux `Kustomization` pointing at the upstream `kubernetes-sigs/gateway-api` repo (tag `v1.5.1`)
